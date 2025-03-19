@@ -46,22 +46,32 @@ class Database:
         async with self.pool.acquire() as conn:
             users = await conn.fetch("SELECT * FROM users")
             return [dict(user) for user in users]
+        
+    async def get_user_by_id(self, id):
+        async with self.pool.acquire() as conn:
+            user = await conn.fetchrow("SELECT * FROM users WHERE id = $1", id)
+            return dict(user) if user else None
 
     async def is_exists(self, user_id: int) -> bool:
         async with self.pool.acquire() as conn:
             user = await conn.fetchval("SELECT EXISTS(SELECT 1 FROM users WHERE user_id = $1)", user_id)
             return user
 
-    async def update(self, user_id: int, new_name: str) -> int:
+    async def update(self, id: int, full_name: str, username: str, email: str, password: int) -> int:
         async with self.pool.acquire() as conn:
             result = await conn.execute(
-                "UPDATE users SET full_name = $1 WHERE user_id = $2", new_name, user_id
+                "UPDATE users SET full_name = $1, username = $2, email = $3, password = $4 WHERE id = $5", 
+                full_name, 
+                username,
+                email,
+                password,
+                id
             )
-            return result
+            return int(result.split()[-1]) 
 
     async def delete(self, user_id: int) -> int:
         async with self.pool.acquire() as conn:
-            result = await conn.execute("DELETE FROM users WHERE user_id = $1", user_id)
+            result = await conn.execute("DELETE FROM users WHERE id = $1", user_id)
             return result
 
     async def close(self):

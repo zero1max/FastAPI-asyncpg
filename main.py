@@ -1,7 +1,7 @@
 from fastapi import FastAPI,APIRouter
 from models import User
 from db import Database
-from rounters import router
+from routers import router
 
 def create_app()->None:
     app = FastAPI(

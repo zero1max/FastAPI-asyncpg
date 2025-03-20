@@ -10,4 +10,4 @@ class User(BaseModel):
     full_name: str
     username: str
     email: str
-    password: str
+    password: str # Write a separate service to save the password to the database using the `BCrypt` library

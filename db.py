@@ -1,6 +1,7 @@
 import asyncpg
 import asyncio
 from config import DATABASE_URL
+from typing import Optional
 
 
 class Database:
@@ -25,54 +26,75 @@ class Database:
             ''')
             print("Table 'users' created successfully!")
 
-    async def add(self, full_name: str,username: str, email:str, password:str)->list[dict]:
+    async def add(self, full_name: str, username: str, email: str, password: str) -> list[dict]:
         async with self.pool.acquire() as conn:
-            await conn.execute(
-                "INSERT INTO users (full_name,username,email,password) VALUES ($1, $2, $3, $4)",
-                full_name,
-                username,
-                email,
-                password
-            )
-            return [{
-                "fullname": full_name,
-                "username": username,
-                "email" : email,
-                "password" : password
-            }]
-
+            try:
+                await conn.execute(
+                    "INSERT INTO users (full_name, username, email, password) VALUES ($1, $2, $3, $4)",
+                    full_name,
+                    username,
+                    email,
+                    password
+                )
+                return [{
+                    "fullname": full_name,
+                    "username": username,
+                    "email": email
+                }]
+            except asyncpg.UniqueViolationError as e:
+                raise Exception("Username or email already exists")
 
     async def all(self) -> list[dict]:
         async with self.pool.acquire() as conn:
-            users = await conn.fetch("SELECT * FROM users")
+            users = await conn.fetch("SELECT id, full_name, username, email FROM users")
             return [dict(user) for user in users]
         
-    async def get_user_by_id(self, id):
+    async def get_user_by_id(self, id: int) -> Optional[dict]:
         async with self.pool.acquire() as conn:
-            user = await conn.fetchrow("SELECT * FROM users WHERE id = $1", id)
+            user = await conn.fetchrow("SELECT id, full_name, username, email FROM users WHERE id = $1", id)
             return dict(user) if user else None
 
     async def is_exists(self, user_id: int) -> bool:
         async with self.pool.acquire() as conn:
-            user = await conn.fetchval("SELECT EXISTS(SELECT 1 FROM users WHERE user_id = $1)", user_id)
+            user = await conn.fetchval("SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)", user_id)
             return user
 
-    async def update(self, id: int, full_name: str, username: str, email: str, password: int) -> int:
+    async def update(self, id: int, full_name: str, username: str, email: str, password: str) -> bool:
         async with self.pool.acquire() as conn:
-            result = await conn.execute(
-                "UPDATE users SET full_name = $1, username = $2, email = $3, password = $4 WHERE id = $5", 
-                full_name, 
-                username,
-                email,
-                password,
-                id
-            )
-            return int(result.split()[-1]) 
+            try:
+                # First check if user exists
+                exists = await conn.fetchval("SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)", id)
+                if not exists:
+                    return False
 
-    async def delete(self, user_id: int) -> int:
+                # Update the user
+                await conn.execute(
+                    "UPDATE users SET full_name = $1, username = $2, email = $3, password = $4 WHERE id = $5", 
+                    full_name, 
+                    username,
+                    email,
+                    password,
+                    id
+                )
+                return True
+            except asyncpg.UniqueViolationError as e:
+                raise Exception("Username or email already exists")
+            except Exception as e:
+                raise Exception(f"Error updating user: {str(e)}")
+
+    async def delete(self, user_id: int) -> bool:
         async with self.pool.acquire() as conn:
-            result = await conn.execute("DELETE FROM users WHERE id = $1", user_id)
-            return result
+            try:
+                # First check if user exists
+                exists = await conn.fetchval("SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)", user_id)
+                if not exists:
+                    return False
+
+                # Delete the user
+                await conn.execute("DELETE FROM users WHERE id = $1", user_id)
+                return True
+            except Exception as e:
+                raise Exception(f"Error deleting user: {str(e)}")
 
     async def close(self):
         if self.pool:

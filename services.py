@@ -1,6 +1,5 @@
 import bcrypt
 
-
 def make_password(password: str) -> str:
     """Hashes a password and returns the hash as a string."""
     salt = bcrypt.gensalt()

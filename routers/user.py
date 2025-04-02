@@ -15,6 +15,7 @@ router = APIRouter(
 @router.get("", response_model=BaseResponse)
 async def read_users():
     await db.connect()
+    await db.create_table()
     users = await db.all()
     await db.close()
     return BaseResponse(data=users)

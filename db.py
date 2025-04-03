@@ -62,10 +62,12 @@ class Database:
     async def update(self, id: int, full_name: str, username: str, email: str, password: str) -> bool:
         async with self.pool.acquire() as conn:
             try:
+                # First check if user exists
                 exists = await conn.fetchval("SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)", id)
                 if not exists:
                     return False
 
+                # Update the user
                 await conn.execute(
                     "UPDATE users SET full_name = $1, username = $2, email = $3, password = $4 WHERE id = $5", 
                     full_name, 
@@ -83,10 +85,12 @@ class Database:
     async def delete(self, user_id: int) -> bool:
         async with self.pool.acquire() as conn:
             try:
+                # First check if user exists
                 exists = await conn.fetchval("SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)", user_id)
                 if not exists:
                     return False
 
+                # Delete the user
                 await conn.execute("DELETE FROM users WHERE id = $1", user_id)
                 return True
             except Exception as e:

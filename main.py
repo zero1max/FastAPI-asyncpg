@@ -1,17 +1,15 @@
-from fastapi import FastAPI,APIRouter
-from models import User
-from db import Database
+from fastapi import FastAPI
 from routers import router
 
-def create_app()->None:
-    app = FastAPI(
-        title="User",
-        version='0.0.1',
-        description="FastAPI CRUD Asyncpg",
-        debug=True,
-    )
-    app.include_router(router)
-    return app
+app = FastAPI(
+    title="User",
+    version='0.0.1',
+    description="FastAPI CRUD Asyncpg",
+    debug=True,
+)
 
+app.include_router(router)  # Routerni to'g'ri qo'shamiz
 
-app  = create_app()
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

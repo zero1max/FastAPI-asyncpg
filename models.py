@@ -3,7 +3,7 @@ from typing import Optional,Any,List
 
 class BaseResponse(BaseModel):
     status: bool = True
-    data: Optional[Any] = None
+    data: Any
     errors: Optional[List[dict]] = None
 
 class User(BaseModel):
